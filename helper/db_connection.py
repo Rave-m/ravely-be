@@ -2,9 +2,16 @@ from sqlalchemy import create_engine, inspect, text
 import pandas as pd
 import os
 import sys
+from dotenv import load_dotenv
 
-# Database connection URL
-URL = "postgresql://postgres.svoxfcxtcqstdrymyjyf:inipasswordya123@aws-0-us-east-2.pooler.supabase.com:6543/postgres"
+# Load environment variables from .env file
+load_dotenv()
+
+# Database connection URL from environment variable
+URL = os.getenv("DATABASE_URL")
+
+if not URL:
+    raise ValueError("DATABASE_URL environment variable is not set. Please check your .env file.")
 
 # Create database engine
 engine = create_engine(URL)
@@ -51,8 +58,31 @@ def init_database(dataset_path='./data/destinations.csv', table_name='destinatio
             print("Error: SQLAlchemy engine is required.")
             return False
 
+        # Cek apakah tabel sudah ada dan memiliki data
+        inspector = inspect(engine)
+        if table_name in inspector.get_table_names():
+            # Cek apakah tabel memiliki data
+            with engine.connect() as conn:
+                result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+                count = result.scalar()
+                if count > 0:
+                    print(f"Table '{table_name}' already exists with {count} rows. Using existing data.")
+                    return True
+                else:
+                    print(f"Table '{table_name}' exists but is empty.")
+        
+        # Jika file CSV tidak ada, coba cari data existing di database
         if not os.path.exists(dataset_path):
-            print(f"Error: Dataset file not found at {dataset_path}")
+            print(f"Dataset file not found at {dataset_path}")
+            # Jika tabel ada dan memiliki data, itu sudah cukup
+            if table_name in inspector.get_table_names():
+                with engine.connect() as conn:
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+                    count = result.scalar()
+                    if count > 0:
+                        print(f"Using existing data from table '{table_name}' ({count} rows).")
+                        return True
+            print("No existing data found and no CSV file to initialize from.")
             return False
 
         print(f"Loading dataset from {dataset_path}...")
@@ -63,12 +93,6 @@ def init_database(dataset_path='./data/destinations.csv', table_name='destinatio
             return False
 
         print(f"Dataset loaded with {df.shape[0]} rows and {df.shape[1]} columns")
-
-        # Cek apakah tabel sudah ada
-        inspector = inspect(engine)
-        if table_name in inspector.get_table_names():
-            print(f"Table '{table_name}' already exists. Skipping initialization.")
-            return True  # tidak inisialisasi ulang
 
         # Format kolom 'categories' menjadi list Python agar cocok dengan TEXT[]
         if 'categories' in df.columns:

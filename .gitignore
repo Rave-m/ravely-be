@@ -1,44 +1,4 @@
 .venv
 .env
 
-__pycache__"""
-Helper Module for Sistem Rekomendasi CBF
-
-This module provides database connection functions and utility functions
-for the Content-Based Filtering recommendation system.
-"""
-
-# Import functions from db_connection.py to make them available when importing the helper module
-from .db_connection import (
-    connect_to_db,
-    init_database,
-    read_table,
-    add_data_to_table,
-    search_destination_by_name
-)
-
-# Import functions from functions.py
-from .functions import (
-    destination_recommendations,
-    search_destinations,
-    get_destination_details,
-    get_all_categories,
-    format_categories_for_display,
-    normalize_district_name
-)
-
-# Define what symbols are exported when using 'from helper import *'
-__all__ = [
-    # Database connection functions
-    'connect_to_db',
-    'init_database',
-    'read_table',
-    'add_data_to_table',
-    'search_destination_by_name',
-
-    # Recommendation system functions
-    'destination_recommendations',
-    'search_destinations',
-    'get_destination_details',
-    'normalize_district_name'
-]
+__pycache__
